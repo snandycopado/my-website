@@ -120,6 +120,12 @@
   gap: 1rem;
 }
 
+.topic-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 .topic-card {
   display: flex;
   justify-content: space-between;
@@ -146,6 +152,29 @@
   font-size: 0.85rem;
 }
 
+.topic-actions {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.btn-view-files {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  border: 1px solid rgba(97, 218, 251, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: #61dafb;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-view-files:hover {
+  background: rgba(97, 218, 251, 0.1);
+}
+
 .btn-start-test {
   padding: 0.6rem 1.5rem;
   font-size: 0.95rem;
@@ -167,6 +196,120 @@
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+.files-viewer {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(97, 218, 251, 0.1);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  padding: 1.2rem;
+  margin-top: -1px;
+}
+
+.files-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.file-item {
+  display: inline-flex;
+}
+
+.file-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.file-btn:hover {
+  background: rgba(97, 218, 251, 0.1);
+  border-color: rgba(97, 218, 251, 0.3);
+}
+
+.file-btn.active {
+  background: rgba(97, 218, 251, 0.15);
+  border-color: #61dafb;
+  color: #fff;
+}
+
+.file-icon {
+  font-size: 1.1rem;
+}
+
+.file-preview {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(97, 218, 251, 0.15);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(97, 218, 251, 0.1);
+}
+
+.preview-header h4 {
+  color: #fff;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.btn-download-file {
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  border: 1px solid rgba(97, 218, 251, 0.3);
+  border-radius: 6px;
+  background: transparent;
+  color: #61dafb;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-download-file:hover {
+  background: rgba(97, 218, 251, 0.1);
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 500px;
+  display: block;
+  margin: 1rem auto;
+  border-radius: 4px;
+}
+
+.preview-pdf {
+  width: 100%;
+  height: 500px;
+  border: none;
+}
+
+.preview-text {
+  padding: 1.2rem;
+  margin: 0;
+  color: #ccc;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 500px;
+  overflow-y: auto;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .result-actions {

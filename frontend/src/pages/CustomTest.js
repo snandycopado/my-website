@@ -17,6 +17,10 @@ function CustomTest() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [viewingTopic, setViewingTopic] = useState(null);
+  const [viewingFile, setViewingFile] = useState(null);
+  const [fileContent, setFileContent] = useState(null);
+  const [loadingContent, setLoadingContent] = useState(false);
 
   const fetchTopics = async () => {
     try {
@@ -123,6 +127,48 @@ function CustomTest() {
     setSelectedTopic(null);
   };
 
+  const handleViewFiles = (topic) => {
+    setViewingTopic(viewingTopic?.id === topic.id ? null : topic);
+    setViewingFile(null);
+    setFileContent(null);
+  };
+
+  const handleViewFile = async (topicId, filename) => {
+    if (viewingFile === filename) {
+      setViewingFile(null);
+      setFileContent(null);
+      return;
+    }
+    setViewingFile(filename);
+    setFileContent(null);
+
+    const ext = filename.split('.').pop().toLowerCase();
+    const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'];
+
+    if (imageExts.includes(ext)) {
+      setFileContent({
+        type: 'image',
+        url: `${API_URL}/api/topics/${topicId}/files/${encodeURIComponent(filename)}`,
+      });
+    } else if (ext === 'pdf') {
+      setFileContent({
+        type: 'pdf',
+        url: `${API_URL}/api/topics/${topicId}/files/${encodeURIComponent(filename)}`,
+      });
+    } else {
+      setLoadingContent(true);
+      try {
+        const res = await fetch(`${API_URL}/api/topics/${topicId}/files/${encodeURIComponent(filename)}/content`);
+        const data = await res.json();
+        setFileContent({ type: 'text', content: data.content });
+      } catch (err) {
+        setFileContent({ type: 'text', content: 'Failed to load file content.' });
+      } finally {
+        setLoadingContent(false);
+      }
+    }
+  };
+
   const getOptionLetter = (index) => ['A', 'B', 'C', 'D'][index];
 
   return (
@@ -143,11 +189,11 @@ function CustomTest() {
                 className="ct-input"
               />
               <label className="file-upload-label">
-                <span>{files.length > 0 ? `${files.length} file(s) selected` : 'Choose Files'}</span>
+                <span>{files.length > 0 ? `${files.length} file(s) selected` : 'Choose Files (PDF, TXT, Images)'}</span>
                 <input
                   type="file"
                   multiple
-                  accept=".txt,.pdf,.doc,.docx"
+                  accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp,.bmp"
                   onChange={e => setFiles(Array.from(e.target.files))}
                   className="file-input"
                 />
@@ -169,18 +215,85 @@ function CustomTest() {
             ) : (
               <div className="topics-grid">
                 {topics.map(topic => (
-                  <div key={topic.id} className="topic-card">
-                    <div className="topic-info">
-                      <h3>{topic.name}</h3>
-                      <p>{topic.file_count} file(s): {topic.files.join(', ')}</p>
+                  <div key={topic.id} className="topic-card-wrapper">
+                    <div className="topic-card">
+                      <div className="topic-info">
+                        <h3>{topic.name}</h3>
+                        <p>{topic.file_count} file(s): {topic.files.join(', ')}</p>
+                      </div>
+                      <div className="topic-actions">
+                        <button
+                          onClick={() => handleViewFiles(topic)}
+                          className="btn-view-files"
+                        >
+                          {viewingTopic?.id === topic.id ? 'Hide Files' : 'View Files'}
+                        </button>
+                        <button
+                          onClick={() => handleStartTest(topic)}
+                          disabled={loading}
+                          className="btn-start-test"
+                        >
+                          {loading && selectedTopic?.id === topic.id ? 'Generating...' : 'Start Test'}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleStartTest(topic)}
-                      disabled={loading}
-                      className="btn-start-test"
-                    >
-                      {loading && selectedTopic?.id === topic.id ? 'Generating...' : 'Start Test'}
-                    </button>
+
+                    {viewingTopic?.id === topic.id && (
+                      <div className="files-viewer">
+                        <div className="files-list">
+                          {topic.files.map(filename => (
+                            <div key={filename} className="file-item">
+                              <button
+                                className={`file-btn ${viewingFile === filename ? 'active' : ''}`}
+                                onClick={() => handleViewFile(topic.id, filename)}
+                              >
+                                <span className="file-icon">
+                                  {['png','jpg','jpeg','gif','webp','bmp'].includes(filename.split('.').pop().toLowerCase()) ? '🖼' :
+                                   filename.endsWith('.pdf') ? '📄' : '📝'}
+                                </span>
+                                {filename}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {loadingContent && (
+                          <div className="loading-container">
+                            <div className="spinner"></div>
+                            <p>Loading file content...</p>
+                          </div>
+                        )}
+
+                        {viewingFile && fileContent && (
+                          <div className="file-preview">
+                            <div className="preview-header">
+                              <h4>{viewingFile}</h4>
+                              <a
+                                href={`${API_URL}/api/topics/${topic.id}/files/${encodeURIComponent(viewingFile)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-download-file"
+                              >
+                                Download
+                              </a>
+                            </div>
+                            {fileContent.type === 'image' && (
+                              <img src={fileContent.url} alt={viewingFile} className="preview-image" />
+                            )}
+                            {fileContent.type === 'pdf' && (
+                              <iframe
+                                src={fileContent.url}
+                                title={viewingFile}
+                                className="preview-pdf"
+                              />
+                            )}
+                            {fileContent.type === 'text' && (
+                              <pre className="preview-text">{fileContent.content}</pre>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

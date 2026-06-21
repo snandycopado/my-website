@@ -1,8 +1,11 @@
 import os
 import json
+import base64
+import mimetypes
 import anthropic
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -20,6 +23,8 @@ UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
 TOPICS_FILE = os.path.join(UPLOAD_DIR, "topics.json")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+
 
 def load_topics():
     if os.path.exists(TOPICS_FILE):
@@ -33,9 +38,60 @@ def save_topics(topics):
         json.dump(topics, f, indent=2)
 
 
+def is_image(filename):
+    return os.path.splitext(filename)[1].lower() in IMAGE_EXTENSIONS
+
+
+def extract_text_from_image(file_path):
+    ext = os.path.splitext(file_path)[1].lower()
+    media_type = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".bmp": "image/bmp",
+    }.get(ext, "image/png")
+
+    with open(file_path, "rb") as f:
+        image_data = base64.standard_b64encode(f.read()).decode("utf-8")
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=2000,
+        messages=[{
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": media_type,
+                        "data": image_data,
+                    },
+                },
+                {
+                    "type": "text",
+                    "text": "Extract ALL the text content from this image. If it contains questions, paragraphs, vocabulary, grammar rules, stories, or any educational content, extract it completely and accurately. Return only the extracted text, nothing else.",
+                },
+            ],
+        }],
+    )
+    return response.content[0].text
+
+
 def read_file_content(file_path):
     ext = os.path.splitext(file_path)[1].lower()
-    if ext == ".pdf":
+    if ext in IMAGE_EXTENSIONS:
+        cache_path = file_path + ".extracted.txt"
+        if os.path.exists(cache_path):
+            with open(cache_path, "r", encoding="utf-8") as f:
+                return f.read()
+        text = extract_text_from_image(file_path)
+        with open(cache_path, "w", encoding="utf-8") as f:
+            f.write(text)
+        return text
+    elif ext == ".pdf":
         try:
             import PyPDF2
             with open(file_path, "rb") as f:
@@ -202,6 +258,23 @@ def list_topics():
     return {"topics": result}
 
 
+@app.get("/api/topics/{topic_id}/files/{filename}")
+def get_file(topic_id: str, filename: str):
+    file_path = os.path.join(UPLOAD_DIR, topic_id, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, filename=filename)
+
+
+@app.get("/api/topics/{topic_id}/files/{filename}/content")
+def get_file_content(topic_id: str, filename: str):
+    file_path = os.path.join(UPLOAD_DIR, topic_id, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    text = read_file_content(file_path)
+    return {"filename": filename, "content": text, "is_image": is_image(filename)}
+
+
 @app.post("/api/generate-custom-questions")
 def generate_custom_questions(topic_name: str = Form(...)):
     topics = load_topics()
@@ -229,7 +302,7 @@ def generate_custom_questions(topic_name: str = Form(...)):
 STUDY MATERIAL:
 {combined_content}
 
-IMPORTANT: Generate completely NEW and DIFFERENT questions each time. Mix question types: fill-in-the-blank, multiple choice comprehension, vocabulary, grammar, and true/false style (as MCQ).
+IMPORTANT: Generate completely NEW and DIFFERENT questions each time. Mix question types: fill-in-the-blank, multiple choice comprehension, vocabulary, grammar, and true/false style (as MCQ). Questions must be based on the content of the study material provided above.
 
 Return ONLY a JSON array with exactly 10 objects. Each object must have:
 - "id": number (1-10)
