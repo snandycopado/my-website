@@ -9,6 +9,7 @@ function Navbar() {
         <li><NavLink to="/" end>Home</NavLink></li>
         <li><NavLink to="/ai-features">AI Features</NavLink></li>
         <li><NavLink to="/chat">Chat Feature</NavLink></li>
+        <li><NavLink to="/custom-test">Custom Test</NavLink></li>
         <li><NavLink to="/salesforce">Salesforce</NavLink></li>
       </ul>
     </nav>
