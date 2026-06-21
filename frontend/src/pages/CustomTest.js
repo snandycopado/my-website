@@ -141,31 +141,15 @@ function CustomTest() {
     }
     setViewingFile(filename);
     setFileContent(null);
-
-    const ext = filename.split('.').pop().toLowerCase();
-    const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'];
-
-    if (imageExts.includes(ext)) {
-      setFileContent({
-        type: 'image',
-        url: `${API_URL}/api/topics/${topicId}/files/${encodeURIComponent(filename)}`,
-      });
-    } else if (ext === 'pdf') {
-      setFileContent({
-        type: 'pdf',
-        url: `${API_URL}/api/topics/${topicId}/files/${encodeURIComponent(filename)}`,
-      });
-    } else {
-      setLoadingContent(true);
-      try {
-        const res = await fetch(`${API_URL}/api/topics/${topicId}/files/${encodeURIComponent(filename)}/content`);
-        const data = await res.json();
-        setFileContent({ type: 'text', content: data.content });
-      } catch (err) {
-        setFileContent({ type: 'text', content: 'Failed to load file content.' });
-      } finally {
-        setLoadingContent(false);
-      }
+    setLoadingContent(true);
+    try {
+      const res = await fetch(`${API_URL}/api/topics/${topicId}/files/${encodeURIComponent(filename)}/view`);
+      const data = await res.json();
+      setFileContent(data);
+    } catch (err) {
+      setFileContent({ type: 'text', extracted_text: 'Failed to load file content.' });
+    } finally {
+      setLoadingContent(false);
     }
   };
 
@@ -268,27 +252,25 @@ function CustomTest() {
                           <div className="file-preview">
                             <div className="preview-header">
                               <h4>{viewingFile}</h4>
-                              <a
-                                href={`${API_URL}/api/topics/${topic.id}/files/${encodeURIComponent(viewingFile)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-download-file"
-                              >
-                                Download
-                              </a>
                             </div>
-                            {fileContent.type === 'image' && (
-                              <img src={fileContent.url} alt={viewingFile} className="preview-image" />
+                            {fileContent.type === 'image' && fileContent.data_url && (
+                              <img src={fileContent.data_url} alt={viewingFile} className="preview-image" />
                             )}
-                            {fileContent.type === 'pdf' && (
+                            {fileContent.type === 'pdf' && fileContent.data_url && (
                               <iframe
-                                src={fileContent.url}
+                                src={fileContent.data_url}
                                 title={viewingFile}
                                 className="preview-pdf"
                               />
                             )}
-                            {fileContent.type === 'text' && (
-                              <pre className="preview-text">{fileContent.content}</pre>
+                            {fileContent.extracted_text && (
+                              <div className="preview-text-section">
+                                <h5 className="preview-text-label">
+                                  {fileContent.type === 'image' ? 'Extracted Text from Image:' :
+                                   fileContent.type === 'pdf' ? 'Extracted Text from PDF:' : 'File Content:'}
+                                </h5>
+                                <pre className="preview-text">{fileContent.extracted_text}</pre>
+                              </div>
                             )}
                           </div>
                         )}

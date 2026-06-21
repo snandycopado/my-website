@@ -299,6 +299,19 @@
   border: none;
 }
 
+.preview-text-section {
+  border-top: 1px solid rgba(97, 218, 251, 0.1);
+}
+
+.preview-text-label {
+  padding: 0.8rem 1.2rem 0;
+  color: #61dafb;
+  font-size: 0.85rem;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 .preview-text {
   padding: 1.2rem;
   margin: 0;

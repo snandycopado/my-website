@@ -1,11 +1,10 @@
 import os
 import json
 import base64
-import mimetypes
 import anthropic
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -19,43 +18,52 @@ app.add_middleware(
 
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
-TOPICS_FILE = os.path.join(UPLOAD_DIR, "topics.json")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
+TOPICS_FILE = os.path.join(DATA_DIR, "topics.json")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
 
+_topics_cache = None
+
 
 def load_topics():
+    global _topics_cache
+    if _topics_cache is not None:
+        return _topics_cache
     if os.path.exists(TOPICS_FILE):
-        with open(TOPICS_FILE, "r") as f:
-            return json.load(f)
-    return {}
+        try:
+            with open(TOPICS_FILE, "r", encoding="utf-8") as f:
+                _topics_cache = json.load(f)
+                return _topics_cache
+        except Exception:
+            pass
+    _topics_cache = {}
+    return _topics_cache
 
 
 def save_topics(topics):
-    with open(TOPICS_FILE, "w") as f:
-        json.dump(topics, f, indent=2)
+    global _topics_cache
+    _topics_cache = topics
+    try:
+        with open(TOPICS_FILE, "w", encoding="utf-8") as f:
+            json.dump(topics, f, indent=2)
+    except Exception:
+        pass
 
 
 def is_image(filename):
     return os.path.splitext(filename)[1].lower() in IMAGE_EXTENSIONS
 
 
-def extract_text_from_image(file_path):
-    ext = os.path.splitext(file_path)[1].lower()
+def extract_text_from_image_bytes(file_bytes, filename):
+    ext = os.path.splitext(filename)[1].lower()
     media_type = {
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".gif": "image/gif",
-        ".webp": "image/webp",
-        ".bmp": "image/bmp",
+        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+        ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp",
     }.get(ext, "image/png")
 
-    with open(file_path, "rb") as f:
-        image_data = base64.standard_b64encode(f.read()).decode("utf-8")
-
+    image_data = base64.standard_b64encode(file_bytes).decode("utf-8")
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=2000,
@@ -64,11 +72,7 @@ def extract_text_from_image(file_path):
             "content": [
                 {
                     "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": media_type,
-                        "data": image_data,
-                    },
+                    "source": {"type": "base64", "media_type": media_type, "data": image_data},
                 },
                 {
                     "type": "text",
@@ -80,28 +84,14 @@ def extract_text_from_image(file_path):
     return response.content[0].text
 
 
-def read_file_content(file_path):
-    ext = os.path.splitext(file_path)[1].lower()
-    if ext in IMAGE_EXTENSIONS:
-        cache_path = file_path + ".extracted.txt"
-        if os.path.exists(cache_path):
-            with open(cache_path, "r", encoding="utf-8") as f:
-                return f.read()
-        text = extract_text_from_image(file_path)
-        with open(cache_path, "w", encoding="utf-8") as f:
-            f.write(text)
-        return text
-    elif ext == ".pdf":
-        try:
-            import PyPDF2
-            with open(file_path, "rb") as f:
-                reader = PyPDF2.PdfReader(f)
-                return "\n".join(page.extract_text() or "" for page in reader.pages)
-        except Exception:
-            return ""
-    else:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            return f.read()
+def extract_text_from_pdf_bytes(file_bytes):
+    try:
+        import PyPDF2
+        import io
+        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
+    except Exception:
+        return ""
 
 
 class GenerateRequest(BaseModel):
@@ -217,31 +207,51 @@ async def upload_topic(
     files: list[UploadFile] = File(...),
 ):
     safe_name = topic_name.strip().replace(" ", "_").lower()
-    topic_dir = os.path.join(UPLOAD_DIR, safe_name)
-    os.makedirs(topic_dir, exist_ok=True)
-
-    saved_files = []
-    for file in files:
-        file_path = os.path.join(topic_dir, file.filename)
-        content = await file.read()
-        with open(file_path, "wb") as f:
-            f.write(content)
-        saved_files.append(file.filename)
 
     topics = load_topics()
-    if safe_name in topics:
-        existing_files = topics[safe_name]["files"]
-        for sf in saved_files:
-            if sf not in existing_files:
-                existing_files.append(sf)
-    else:
+    if safe_name not in topics:
         topics[safe_name] = {
             "display_name": topic_name.strip(),
-            "files": saved_files,
+            "files": [],
         }
+
+    for file in files:
+        file_bytes = await file.read()
+        filename = file.filename
+        ext = os.path.splitext(filename)[1].lower()
+
+        # Extract text content
+        if ext in IMAGE_EXTENSIONS:
+            extracted_text = extract_text_from_image_bytes(file_bytes, filename)
+            file_data_url = f"data:image/{ext.lstrip('.')};base64,{base64.standard_b64encode(file_bytes).decode('utf-8')}"
+        elif ext == ".pdf":
+            extracted_text = extract_text_from_pdf_bytes(file_bytes)
+            file_data_url = f"data:application/pdf;base64,{base64.standard_b64encode(file_bytes).decode('utf-8')}"
+        else:
+            extracted_text = file_bytes.decode("utf-8", errors="ignore")
+            file_data_url = None
+
+        file_entry = {
+            "filename": filename,
+            "type": "image" if ext in IMAGE_EXTENSIONS else ("pdf" if ext == ".pdf" else "text"),
+            "extracted_text": extracted_text[:10000],
+            "data_url": file_data_url,
+        }
+
+        existing_filenames = [f["filename"] for f in topics[safe_name]["files"]]
+        if filename in existing_filenames:
+            idx = existing_filenames.index(filename)
+            topics[safe_name]["files"][idx] = file_entry
+        else:
+            topics[safe_name]["files"].append(file_entry)
+
     save_topics(topics)
 
-    return {"message": "Files uploaded successfully", "topic": safe_name, "files": saved_files}
+    return {
+        "message": "Files uploaded successfully",
+        "topic": safe_name,
+        "files": [f["filename"] for f in topics[safe_name]["files"]],
+    }
 
 
 @app.get("/api/topics")
@@ -253,26 +263,27 @@ def list_topics():
             "id": key,
             "name": val["display_name"],
             "file_count": len(val["files"]),
-            "files": val["files"],
+            "files": [f["filename"] for f in val["files"]],
         })
     return {"topics": result}
 
 
-@app.get("/api/topics/{topic_id}/files/{filename}")
-def get_file(topic_id: str, filename: str):
-    file_path = os.path.join(UPLOAD_DIR, topic_id, filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(file_path, filename=filename)
+@app.get("/api/topics/{topic_id}/files/{filename}/view")
+def view_file(topic_id: str, filename: str):
+    topics = load_topics()
+    if topic_id not in topics:
+        raise HTTPException(status_code=404, detail="Topic not found")
 
+    for f in topics[topic_id]["files"]:
+        if f["filename"] == filename:
+            return {
+                "filename": f["filename"],
+                "type": f["type"],
+                "extracted_text": f["extracted_text"],
+                "data_url": f.get("data_url"),
+            }
 
-@app.get("/api/topics/{topic_id}/files/{filename}/content")
-def get_file_content(topic_id: str, filename: str):
-    file_path = os.path.join(UPLOAD_DIR, topic_id, filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    text = read_file_content(file_path)
-    return {"filename": filename, "content": text, "is_image": is_image(filename)}
+    raise HTTPException(status_code=404, detail="File not found")
 
 
 @app.post("/api/generate-custom-questions")
@@ -283,14 +294,11 @@ def generate_custom_questions(topic_name: str = Form(...)):
         raise HTTPException(status_code=404, detail="Topic not found")
 
     topic = topics[safe_name]
-    topic_dir = os.path.join(UPLOAD_DIR, safe_name)
 
     combined_content = ""
-    for filename in topic["files"]:
-        file_path = os.path.join(topic_dir, filename)
-        if os.path.exists(file_path):
-            combined_content += f"\n--- Content from {filename} ---\n"
-            combined_content += read_file_content(file_path)
+    for f in topic["files"]:
+        combined_content += f"\n--- Content from {f['filename']} ---\n"
+        combined_content += f["extracted_text"]
 
     if not combined_content.strip():
         raise HTTPException(status_code=400, detail="No readable content found in uploaded files")
