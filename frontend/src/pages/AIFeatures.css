@@ -204,6 +204,29 @@
   color: #0f0c29;
 }
 
+.exam-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.btn-download {
+  padding: 0.7rem 1.8rem;
+  font-size: 0.95rem;
+  border: 1px solid rgba(97, 218, 251, 0.4);
+  border-radius: 10px;
+  background: rgba(97, 218, 251, 0.1);
+  color: #61dafb;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-download:hover {
+  background: rgba(97, 218, 251, 0.25);
+  transform: scale(1.05);
+}
+
 .btn-submit {
   display: block;
   margin: 2rem auto;

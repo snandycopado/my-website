@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { downloadQuestionPaper } from '../utils/downloadPDF';
 import './AIFeatures.css';
 
 const API_URL = 'https://my-website-w7br.onrender.com';
@@ -147,6 +148,14 @@ function AIFeatures() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="exam-actions">
+            <button
+              onClick={() => downloadQuestionPaper(questions, `English Test - Class ${studentClass}`)}
+              className="btn-download"
+            >
+              Download PDF
+            </button>
           </div>
           <button
             onClick={handleSubmit}

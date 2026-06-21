@@ -225,6 +225,9 @@
 .custom-test .option-btn.selected { background: rgba(97, 218, 251, 0.15); border-color: #61dafb; color: #fff; }
 .custom-test .option-letter { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(97, 218, 251, 0.2); color: #61dafb; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
 .custom-test .option-btn.selected .option-letter { background: #61dafb; color: #0f0c29; }
+.custom-test .exam-actions { display: flex; justify-content: center; margin-top: 1.5rem; }
+.custom-test .btn-download { padding: 0.7rem 1.8rem; font-size: 0.95rem; border: 1px solid rgba(97, 218, 251, 0.4); border-radius: 10px; background: rgba(97, 218, 251, 0.1); color: #61dafb; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.custom-test .btn-download:hover { background: rgba(97, 218, 251, 0.25); transform: scale(1.05); }
 .custom-test .btn-submit { display: block; margin: 2rem auto; padding: 1rem 3rem; font-size: 1.1rem; border: none; border-radius: 12px; background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
 .custom-test .btn-submit:hover { transform: scale(1.05); }
 .custom-test .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }

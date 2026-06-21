@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { downloadQuestionPaper } from '../utils/downloadPDF';
 import './CustomTest.css';
 
 const API_URL = 'https://my-website-w7br.onrender.com';
@@ -226,6 +227,14 @@ function CustomTest() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="exam-actions">
+            <button
+              onClick={() => downloadQuestionPaper(questions, `Custom Test - ${selectedTopic?.name}`)}
+              className="btn-download"
+            >
+              Download PDF
+            </button>
           </div>
           <button
             onClick={handleSubmit}
