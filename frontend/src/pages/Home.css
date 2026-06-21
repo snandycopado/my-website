@@ -1,0 +1,152 @@
+.home {
+  color: #e0e0e0;
+}
+
+.hero {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  text-align: center;
+  padding: 2rem;
+}
+
+.hero-greeting {
+  font-size: 1.2rem;
+  color: #61dafb;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.hero-name {
+  font-size: 4rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0.5rem 0;
+  background: linear-gradient(135deg, #61dafb, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-title {
+  font-size: 1.8rem;
+  color: #a78bfa;
+  font-weight: 400;
+  margin: 0.5rem 0;
+}
+
+.hero-tagline {
+  font-size: 1.1rem;
+  color: #999;
+  max-width: 600px;
+  margin: 1rem auto 0;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2rem;
+  color: #61dafb;
+  margin-bottom: 2rem;
+}
+
+.about {
+  padding: 5rem 2rem;
+  background: #1a1a2e;
+}
+
+.about-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.about-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(97, 218, 251, 0.15);
+  border-radius: 16px;
+  padding: 2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.about-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(97, 218, 251, 0.1);
+}
+
+.about-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.about-card h3 {
+  color: #fff;
+  margin-bottom: 0.8rem;
+  font-size: 1.3rem;
+}
+
+.about-card p {
+  color: #aaa;
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+.skills {
+  padding: 5rem 2rem;
+  background: #16213e;
+}
+
+.skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.skill-tag {
+  background: rgba(97, 218, 251, 0.1);
+  border: 1px solid rgba(97, 218, 251, 0.3);
+  color: #61dafb;
+  padding: 0.6rem 1.4rem;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.skill-tag:hover {
+  background: rgba(97, 218, 251, 0.25);
+  transform: scale(1.05);
+}
+
+.cta {
+  padding: 5rem 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, #302b63, #24243e);
+}
+
+.cta h2 {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.cta p {
+  color: #aaa;
+  font-size: 1.1rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.footer {
+  padding: 2rem;
+  text-align: center;
+  background: #0f0c29;
+  color: #666;
+  font-size: 0.9rem;
+}
